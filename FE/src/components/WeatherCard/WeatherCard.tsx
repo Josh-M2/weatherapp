@@ -160,7 +160,7 @@ const WeatherCard: React.FC = () => {
             </h1>
           ) : weatherData ? (
             <h1 className="text-5xl font-semibold text-[#F1EFEC]">
-              {weatherData.main.temp}°C
+              {weatherData.main.temp.toFixed(0)}°C
             </h1>
           ) : (
             error && <p className="text-red-500">{error}</p>
