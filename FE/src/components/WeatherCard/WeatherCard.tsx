@@ -1,18 +1,110 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   MagnifyingGlassImage,
   WaterDropletImage,
   WindImage,
   WeatherImage,
 } from "../Images/Images";
+import axiosInstance from "../../axiosInstance";
 
 const WeatherCard: React.FC = () => {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("London");
+  const [loading, setLoading] = useState(false);
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = () => {
+  const [location, setLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  // Effect to request the user's location when the component mounts
+  useEffect(() => {
+    // Check if geolocation is available in the browser
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Get the latitude and longitude from the position object
+          const { latitude, longitude } = position.coords;
+          resetSearch();
+          setLocation({ latitude, longitude });
+        },
+        (error) => {
+          console.error("Geolocation permission denied or failed.", error);
+          handleSearch(); // Trigger search if geolocation is denied or fails
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+      handleSearch();
+    }
+  }, []);
+
+  useEffect(() => {
+    // console.log("location", location?.latitude);
+    // console.log("location", location?.longitude);
+
+    handleInitialLocation();
+  }, [location]);
+
+  const handleInitialLocation = async () => {
+    if (location) {
+      try {
+        const response = await axiosInstance.get(
+          `/weather/${location?.latitude}/${location?.longitude}`
+        );
+
+        if (response) {
+          console.log("weather data", response.data);
+          setWeatherData(response.data);
+        }
+      } catch (error: any) {
+        if (error.response) {
+          if (error.response.status === 404) {
+            console.error("API endpoint not found");
+          } else {
+            console.error(`HTTP Error: ${error.response.status}`);
+          }
+        } else if (error.request) {
+          console.error("Error: No response received from server");
+        } else {
+          console.error("Error:", error.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleSearch = async () => {
     if (search.trim() !== "") {
+      setLoading(true);
+      setError(null);
       const currentSearch = search;
-      console.log(currentSearch);
+
+      try {
+        const response = await axiosInstance.get(`/weather/${currentSearch}`);
+
+        if (response) {
+          console.log("weather data", response.data);
+          setWeatherData(response.data);
+        }
+      } catch (error: any) {
+        if (error.response) {
+          if (error.response.status === 404) {
+            console.error("API endpoint not found");
+          } else {
+            console.error(`HTTP Error: ${error.response.status}`);
+          }
+        } else if (error.request) {
+          console.error("Error: No response received from server");
+        } else {
+          console.error("Error:", error.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+
       resetSearch();
     }
   };
@@ -49,24 +141,65 @@ const WeatherCard: React.FC = () => {
 
         {/* Weather Icon */}
         <div className="flex justify-center">
-          <WeatherImage url="https://openweathermap.org/img/wn/10d@2x.png" />
+          {loading ? (
+            <p className="text-white">Loading...</p>
+          ) : weatherData ? (
+            <WeatherImage
+              url={`https://openweathermap.org/img/wn/${weatherData?.weather[0]?.icon}@2x.png`}
+            />
+          ) : (
+            error && <p className="text-red-500">{error}</p>
+          )}
         </div>
 
         {/* Temperature & Location */}
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-semibold text-[#F1EFEC]">21°C</h1>
-          <p className="text-lg text-[#F1EFEC]">New York</p>
+          {loading ? (
+            <h1 className="text-5xl font-semibold text-[#F1EFEC]">
+              Loading...
+            </h1>
+          ) : weatherData ? (
+            <h1 className="text-5xl font-semibold text-[#F1EFEC]">
+              {weatherData.main.temp}°C
+            </h1>
+          ) : (
+            error && <p className="text-red-500">{error}</p>
+          )}
+
+          {loading ? (
+            <p className="text-lg text-[#F1EFEC]">Loading...</p>
+          ) : weatherData ? (
+            <p className="text-lg text-[#F1EFEC]">{weatherData?.name}</p>
+          ) : (
+            error && <p className="text-red-500">{error}</p>
+          )}
         </div>
 
         {/* Weather Details */}
         <div className="flex justify-between mt-6 text-sm">
           <div className="flex items-center space-x-2">
             <WaterDropletImage />
-            <span className="text-[#F1EFEC]">67% Humidity</span>
+            {loading ? (
+              <span className="text-[#F1EFEC]">Loading...</span>
+            ) : weatherData ? (
+              <span className="text-[#F1EFEC]">
+                {weatherData?.main?.humidity}% Humidity
+              </span>
+            ) : (
+              error && <p className="text-red-500">{error}</p>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <WindImage />
-            <span className="text-[#F1EFEC]">2.06 km/h</span>
+            {loading ? (
+              <span className="text-[#F1EFEC]">Loading...</span>
+            ) : weatherData ? (
+              <span className="text-[#F1EFEC]">
+                {weatherData?.wind?.speed} km/h
+              </span>
+            ) : (
+              error && <p className="text-red-500">{error}</p>
+            )}
           </div>
         </div>
       </div>
