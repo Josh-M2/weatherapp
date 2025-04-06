@@ -99,6 +99,7 @@ const WeatherCard: React.FC = () => {
       }
     }
     resetSearch();
+
     setLoading(false);
   };
 
@@ -146,11 +147,11 @@ const WeatherCard: React.FC = () => {
               className="bg-transparent outline-none text-[#F1EFEC] placeholder-gray-300 w-full px-2"
             />
             {suggestions.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white rounded shadow text-black !w-56 mt-2">
+              <ul className="absolute z-10 w-full bg-[#506c8c] rounded shadow text-[#F1EFEC] !w-56 mt-2">
                 {suggestions.map((location, index) => (
                   <li
                     key={index}
-                    className="p-2 hover:bg-gray-100 rounded cursor-pointer w-56"
+                    className="p-2 hover:bg-gray-500 rounded cursor-pointer w-56"
                     onClick={() => {
                       setSearch(
                         `${location.name}, ${location.state}, ${location.country}`
