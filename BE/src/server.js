@@ -13,7 +13,7 @@ app.use(express.json());
 
 app.use("/api", weatherRoute);
 
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5174;
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
