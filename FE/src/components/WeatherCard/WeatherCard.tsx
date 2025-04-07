@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MagnifyingGlassImage,
   WaterDropletImage,
   WindImage,
   WeatherImage,
+} from "../Images/Images";
+import {
   IconOfWeatherLoader,
   TempAndCityLoader,
   HumidityAndWindSpeedLoader,
-} from "../Images/Images";
+} from "../Loaders/Loaders";
 import { FetchInitialWeather } from "../../services/WeatherCardAPI/FetchInitialWeatherAPI";
 import { SearchedWeather } from "../../services/WeatherCardAPI/SearchedWeatherAPI";
 import { SuggestionOfSearchbar } from "../../services/WeatherCardAPI/SuggestionOfSearchbar";
@@ -24,6 +26,27 @@ const WeatherCard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [location, setLocation] = useState<LocationLatLonModel | null>(null);
   const [suggestions, setSuggestions] = useState<LocationSuggestionModel[]>([]);
+  const [tmpSuggestions, setTmpSuggestions] = useState<
+    LocationSuggestionModel[]
+  >([]);
+  const divSuggestionRef = useRef<HTMLDivElement>(null);
+
+  //if the user clicks outside the reference div the suggestions will be empty (logic)
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        divSuggestionRef.current &&
+        !divSuggestionRef.current.contains(event.target as Node)
+      ) {
+        setSuggestions([]);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // search suggestions
   useEffect(() => {
@@ -35,10 +58,14 @@ const WeatherCard: React.FC = () => {
             if (response) {
               console.log("suggestions: ", response);
               setSuggestions(response);
+              setTmpSuggestions(response);
             }
           } catch (error: any) {
             console.error(error.message);
           }
+        } else {
+          setTmpSuggestions([]);
+          setSuggestions([]);
         }
       };
       fetchSuggestions();
@@ -133,7 +160,7 @@ const WeatherCard: React.FC = () => {
       <div className="bg-[#23486A] p-6 rounded-2xl shadow-lg text-white w-[293px] h-[360px]">
         {/* Search Bar */}
         <div className="flex items-center bg-white/20 p-2 rounded-full mb-4">
-          <div>
+          <div ref={divSuggestionRef}>
             <input
               type="text"
               placeholder="Search"
@@ -145,6 +172,11 @@ const WeatherCard: React.FC = () => {
                 if (e.key === "Enter") handleSearch();
               }}
               className="bg-transparent outline-none text-[#F1EFEC] placeholder-gray-300 w-full px-2"
+              onFocus={() => {
+                if (search.length > 2 && tmpSuggestions) {
+                  setSuggestions(tmpSuggestions);
+                }
+              }}
             />
             {suggestions.length > 0 && (
               <ul className="absolute z-10 w-full bg-[#506c8c] rounded shadow text-[#F1EFEC] !w-56 mt-2">
@@ -153,14 +185,16 @@ const WeatherCard: React.FC = () => {
                     key={index}
                     className="p-2 hover:bg-gray-500 rounded cursor-pointer w-56"
                     onClick={() => {
-                      setSearch(
-                        `${location.name}, ${location.state}, ${location.country}`
-                      );
+                      // setSearch(
+                      //   `${location.name}, ${location.state}, ${location.country}`
+                      // );
                       setLocation({
                         latitude: location.lat,
                         longitude: location.lon,
                       });
                       setSuggestions([]);
+                      setTmpSuggestions([]);
+
                       console.log("location", location);
                     }}
                   >
